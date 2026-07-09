@@ -1,0 +1,160 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #0a0014;
+  --color-bg-deep: #050009;
+  --color-surface: #14002e;
+  --color-surface-2: #1f0850;
+  --color-border: #ff006e80;
+  --color-border-soft: #ff006e30;
+  --color-text: #f5e6ff;
+  --color-text-muted: #a890d4;
+  --color-pink: #ff006e;
+  --color-pink-glow: #ff006eb3;
+  --color-cyan: #06d6ff;
+  --color-cyan-glow: #06d6ffb3;
+  --color-yellow: #ffd60a;
+  --color-success: #06ffa5;
+  --color-danger: #ff4d6d;
+
+  --font-sans: var(--font-jetbrains), ui-monospace, "SF Mono", Menlo, monospace;
+  --font-display: var(--font-orbitron), ui-sans-serif, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+html, body {
+  background:
+    radial-gradient(ellipse at 50% -20%, #2a0066 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 100%, #06032b 0%, transparent 50%),
+    var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Full-page CRT scanlines */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.04) 0,
+    rgba(255, 255, 255, 0.04) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+/* Subtle horizon grid behind everything */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(var(--color-pink-glow) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-pink-glow) 1px, transparent 1px);
+  background-size: 80px 80px;
+  background-position: center bottom;
+  -webkit-mask-image: linear-gradient(180deg, transparent 60%, black 100%);
+  mask-image: linear-gradient(180deg, transparent 60%, black 100%);
+  opacity: 0.15;
+}
+
+::selection { background: var(--color-pink); color: var(--color-bg); }
+
+:focus-visible {
+  outline: 2px solid var(--color-cyan);
+  outline-offset: 2px;
+  box-shadow: 0 0 12px var(--color-cyan-glow);
+}
+
+/* === EPOCH wordmark — neon, chromatic offset === */
+.wordmark {
+  font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  line-height: 0.9;
+  font-size: clamp(3rem, 11vw, 6.5rem);
+  max-width: 100%;
+  color: var(--color-pink);
+  text-shadow:
+    0 0 14px var(--color-pink),
+    0 0 40px var(--color-pink-glow),
+    -3px 0 0 var(--color-cyan),
+    3px 0 0 #ffffff35;
+  position: relative;
+  display: inline-block;
+  user-select: none;
+}
+.wordmark::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0,
+    transparent 6px,
+    rgba(0, 0, 0, 0.7) 6px,
+    rgba(0, 0, 0, 0.7) 11px
+  );
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+
+/* Section header — terminal-style w/ leading marker */
+.section-head {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.95rem;
+  color: var(--color-cyan);
+  text-shadow: 0 0 10px var(--color-cyan-glow);
+}
+.section-head::before {
+  content: '▸ ';
+  color: var(--color-pink);
+}
+
+/* Hot button glow on hover */
+.glow-pink:hover {
+  box-shadow: 0 0 22px var(--color-pink-glow), 0 0 4px var(--color-pink);
+}
+.glow-cyan:hover {
+  box-shadow: 0 0 22px var(--color-cyan-glow), 0 0 4px var(--color-cyan);
+}
+
+main, header, footer { position: relative; z-index: 1; }
+
+/* Motion-only effects: skipped entirely under reduced-motion */
+@media (prefers-reduced-motion: no-preference) {
+  /* Pulsing live dot */
+  @keyframes neon-pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 8px currentColor; }
+    50% { opacity: 0.5; box-shadow: 0 0 14px currentColor; }
+  }
+  .live-dot {
+    animation: neon-pulse 1.2s ease-in-out infinite;
+  }
+
+  /* CRT power-on flicker — fires once on load, then settles */
+  @keyframes flicker-intro {
+    0%   { opacity: 0.2; filter: brightness(0.4); }
+    8%   { opacity: 0.95; }
+    12%  { opacity: 0.5; filter: brightness(0.7); }
+    16%  { opacity: 1; filter: none; }
+    24%  { opacity: 0.7; }
+    28%  { opacity: 1; }
+    100% { opacity: 1; filter: none; }
+  }
+  .flicker {
+    animation: flicker-intro 1.4s ease-out 1;
+  }
+}

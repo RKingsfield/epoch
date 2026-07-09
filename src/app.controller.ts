@@ -1,0 +1,22 @@
+import { Controller, Get, Session } from '@nestjs/common';
+import { AuthStatus } from '../shared/types';
+import { AppService } from './app.service';
+import { AppSession } from './session/session.types';
+
+@Controller()
+export class AppController {
+  constructor(private readonly appService: AppService) {}
+
+  @Get('health')
+  health(): { status: string } {
+    return { status: 'ok' };
+  }
+
+  @Get('status')
+  async getStatus(@Session() session: AppSession): Promise<AuthStatus> {
+    return this.appService.getStatus({
+      lastfm: !!session.lastfm,
+      spotify: !!session.spotify,
+    });
+  }
+}

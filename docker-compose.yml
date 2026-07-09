@@ -1,0 +1,43 @@
+services:
+  epoch:
+    image: ${EPOCH_IMAGE:-epoch:latest}
+    container_name: epoch
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+      - redis
+    environment:
+      PORT: 5342
+      MONGODB_URI: mongodb://${DATABASE_USER}:${DATABASE_PASS}@mongodb:27017/${DATABASE_NAME}?authSource=admin
+      REDIS_URL: redis://redis:6379
+      SESSION_SECRET: ${SESSION_SECRET}
+      PUBLIC_URL: ${PUBLIC_URL}
+      LASTFM_API_KEY: ${LASTFM_API_KEY}
+      LASTFM_SHARED_SECRET: ${LASTFM_SHARED_SECRET}
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET}
+    ports:
+      - '5342:5342'
+
+  mongodb:
+    image: mongo:7
+    container_name: epoch-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${DATABASE_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${DATABASE_PASS}
+      MONGO_INITDB_DATABASE: ${DATABASE_NAME}
+    volumes:
+      - mongo-data:/data/db
+
+  redis:
+    image: redis:7-alpine
+    container_name: epoch-redis
+    restart: unless-stopped
+    command: ["redis-server", "--save", "60", "1", "--appendonly", "no"]
+    volumes:
+      - redis-data:/data
+
+volumes:
+  mongo-data:
+  redis-data:

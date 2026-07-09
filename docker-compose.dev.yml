@@ -1,0 +1,51 @@
+services:
+  epoch:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: base
+    image: epoch:dev
+    container_name: epoch-dev
+    command: ["npm", "run", "start:dev"]
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - mongodb
+      - redis
+    environment:
+      PORT: 5342
+      MONGODB_URI: mongodb://${DATABASE_USER}:${DATABASE_PASS}@mongodb:27017/${DATABASE_NAME}?authSource=admin
+      REDIS_URL: redis://redis:6379
+      SESSION_SECRET: ${SESSION_SECRET:-dev-secret-change-me}
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:5342}
+      LASTFM_API_KEY: ${LASTFM_API_KEY}
+      LASTFM_SHARED_SECRET: ${LASTFM_SHARED_SECRET}
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET}
+    ports:
+      - '5342:5342'
+
+  mongodb:
+    image: mongo:7
+    container_name: epoch-mongodb-dev
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${DATABASE_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${DATABASE_PASS}
+      MONGO_INITDB_DATABASE: ${DATABASE_NAME}
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo-data-dev:/data/db
+
+  redis:
+    image: redis:7-alpine
+    container_name: epoch-redis-dev
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis-data-dev:/data
+
+volumes:
+  mongo-data-dev:
+  redis-data-dev:
