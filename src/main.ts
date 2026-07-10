@@ -19,7 +19,7 @@ async function bootstrap() {
   // to set the secure cookie because req.protocol comes through as 'http'.
   app.getHttpAdapter().getInstance().set('trust proxy', 1);
 
-  app.use(helmet());
+  app.use(helmet({ contentSecurityPolicy: false }));
 
   const config = app.get(ConfigService);
 
