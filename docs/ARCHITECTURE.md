@@ -30,6 +30,27 @@
 | Metrics | prom-client at `/metrics` |
 | Rate limiting | Bottleneck (4 concurrent, 100ms delay, 50 requests per 5s) with `Retry-After` support |
 
+## Request flow
+
+A generation request moves through four layers:
+
+1. **Frontend** POSTs to `/api/v1/jobs/generate` with an optional period filter. The controller snapshots the user's Last.fm and Spotify session tokens into a BullMQ job payload and enqueues it.
+2. **BullMQ worker** picks up the job. The processor creates a `JobTokenContext` so that refreshed Spotify tokens survive mid-job by writing back to the job data via `job.updateData()`.
+3. **Generation service** iterates all registered `PeriodGenerator` implementations. Each generator fetches top tracks from Last.fm for its time windows, then the service searches Spotify for each track (checking the MongoDB cache first), creates playlists, and records everything.
+4. **Frontend polls** `GET /api/v1/jobs/:id` at 1.5s intervals (backing off to 5s when progress stalls) until the job completes or fails.
+
+Rematches follow a different path: `PUT /api/v1/playlists/:id/tracks/:position` swaps the track on Spotify and in the DB, writes a canonical cache entry, and fans out to other playlists containing the same scrobble.
+
+## Data model
+
+Three MongoDB collections:
+
+**`playlists`** — one document per generated playlist. Keyed by `(userId, period, periodKey)` with a unique compound index. Re-generating the same period upserts rather than duplicating.
+
+**`playlisttracks`** — one document per track per playlist, linked by `playlistId` and `position`. Stores both the Last.fm metadata (artist, title) and the Spotify match (track ID, manual override flag). On re-generation, all tracks for a playlist are deleted and re-inserted.
+
+**`tracks`** — the global Spotify match cache. Keyed by `(artist, title)`. When `manualOverride` is true, generation skips Spotify search and uses this match directly. Automatic cache writes won't overwrite a manual entry.
+
 ## Module layout
 
 ```
