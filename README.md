@@ -48,7 +48,6 @@ For self-hosted music setups, epoch can optionally export the same track selecti
 |---|---|
 | [Architecture](docs/ARCHITECTURE.md) | System design, data model, module layout, request flow |
 | [Design decisions](docs/DESIGN.md) | Why it's built this way |
-| [Code walkthrough](docs/CODE_WALKTHROUGH.md) | Module-by-module deep dive |
 | [Developer's guide](docs/DEVELOPERS_GUIDE.md) | Setup, configuration, deployment |
 | [Future plans](docs/FUTURE.md) | What's next |
 
