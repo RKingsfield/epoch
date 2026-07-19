@@ -1,12 +1,14 @@
-import { Module } from '@nestjs/common';
+import { Inject, Module, OnModuleDestroy } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { QueueEvents } from 'bullmq';
 import { GenerationModule } from '../generation/generation.module';
 import { MetricsModule } from '../metrics/metrics.module';
 import { JobsController } from './jobs.controller';
 import {
   PlaylistGenerationProcessor,
   PLAYLIST_QUEUE,
+  PLAYLIST_QUEUE_EVENTS,
 } from './playlist-generation.processor';
 
 function parseRedis(url: string): {
@@ -30,9 +32,7 @@ function parseRedis(url: string): {
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        connection: parseRedis(
-          config.get<string>('REDIS_URL') ?? 'redis://redis:6379',
-        ),
+        connection: parseRedis(config.getOrThrow<string>('REDIS_URL')),
       }),
     }),
     BullModule.registerQueue({ name: PLAYLIST_QUEUE }),
@@ -40,6 +40,24 @@ function parseRedis(url: string): {
     MetricsModule,
   ],
   controllers: [JobsController],
-  providers: [PlaylistGenerationProcessor],
+  providers: [
+    PlaylistGenerationProcessor,
+    {
+      provide: PLAYLIST_QUEUE_EVENTS,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) =>
+        new QueueEvents(PLAYLIST_QUEUE, {
+          connection: parseRedis(config.getOrThrow<string>('REDIS_URL')),
+        }),
+    },
+  ],
 })
-export class JobsModule {}
+export class JobsModule implements OnModuleDestroy {
+  constructor(
+    @Inject(PLAYLIST_QUEUE_EVENTS) private readonly queueEvents: QueueEvents,
+  ) {}
+
+  async onModuleDestroy(): Promise<void> {
+    await this.queueEvents.close();
+  }
+}

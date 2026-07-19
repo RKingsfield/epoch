@@ -7,14 +7,9 @@ import {
 } from '../spotify/spotify.service';
 import { SpotifyTokenContext } from '../spotify/spotify-token.context';
 import { AurralService } from '../aurral/aurral.service';
-import { LastfmService } from '../lastfm/lastfm.service';
+import { LastfmService, Track } from '../lastfm/lastfm.service';
 import { PlaylistsService } from '../playlists/playlists.service';
-import {
-  PlaylistPeriod,
-  SkipReason,
-  SkippedEntry,
-  ProcessSummary,
-} from '../../shared/types';
+import { PlaylistPeriod, ProcessSummary } from '../../shared/types';
 import { LastfmSessionData } from '../session/session.types';
 import {
   METRIC_PLAYLISTS_CREATED,
@@ -28,17 +23,18 @@ import {
   PeriodSpec,
 } from './period-generator';
 import { errorMessage } from '../utils/errors';
-
-const MIN_TRACKS_FOR_PLAYLIST = 10;
-const MIN_LASTFM_TRACKS = 5;
+import { ConfigService } from '@nestjs/config';
 
 export type ProgressReporter = (msg: string) => Promise<void> | void;
 
 @Injectable()
 export class GenerationService {
   private readonly logger = new Logger(GenerationService.name);
+  private readonly minLastfmTracks: number;
+  private readonly minTracksForPlaylist: number;
 
   constructor(
+    config: ConfigService,
     private readonly lastfm: LastfmService,
     private readonly spotify: SpotifyService,
     private readonly aurral: AurralService,
@@ -52,13 +48,23 @@ export class GenerationService {
     private readonly tracksMatched: Counter<string>,
     @InjectMetric(METRIC_TRACKS_UNMATCHED)
     private readonly tracksUnmatched: Counter<string>,
-  ) {}
+  ) {
+    this.minLastfmTracks = parseInt(
+      config.getOrThrow<string>('MIN_LASTFM_TRACKS'),
+      10,
+    );
+    this.minTracksForPlaylist = parseInt(
+      config.getOrThrow<string>('MIN_TRACKS_FOR_PLAYLIST'),
+      10,
+    );
+  }
 
   async generate(
     lastfm: LastfmSessionData,
     ctx: SpotifyTokenContext,
     onProgress: ProgressReporter = () => {},
     periods?: PlaylistPeriod[],
+    shouldCancel: () => Promise<boolean> = async () => false,
   ): Promise<ProcessSummary> {
     const userData = await this.lastfm.getUserData(lastfm);
     const startDate = new Date(Number(userData.registered) * 1000);
@@ -69,6 +75,7 @@ export class GenerationService {
     const summary: ProcessSummary = { created: [], skipped: [] };
     for (const generator of this.generators) {
       if (filter && !filter.has(generator.period)) continue;
+      if (await shouldCancel()) throw new Error('Cancelled by user');
       await onProgress(`Generating ${generator.label} playlists`);
       let specs: PeriodSpec[];
       try {
@@ -85,6 +92,9 @@ export class GenerationService {
         continue;
       }
       for (const spec of specs) {
+        // Outside the try — cancellation must abort the run, not get
+        // recorded as a per-spec error and carry on.
+        if (await shouldCancel()) throw new Error('Cancelled by user');
         try {
           await this.tryCreate(
             lastfm.name,
@@ -117,12 +127,36 @@ export class GenerationService {
     summary: ProcessSummary,
     onProgress: ProgressReporter,
   ): Promise<void> {
-    if (existing.find((p) => p.name === spec.title)) {
-      summary.skipped.push({ title: spec.title, reason: 'already_exists' });
+    const existingMatch = existing.find((p) => p.name === spec.title);
+    if (existingMatch) {
+      // Heal the vault: if a previous run created the Spotify playlist but
+      // the DB write failed, the playlist would otherwise stay invisible
+      // forever — it's skipped here on every run and never re-recorded.
+      let detail: string | undefined;
+      if (
+        !(await this.playlists.hasRecord(userId, spec.period, spec.periodKey))
+      ) {
+        const matches = await this.matchTracks(ctx, spec.tracks);
+        await this.playlists.record({
+          userId,
+          title: spec.title,
+          period: spec.period,
+          periodKey: spec.periodKey,
+          spotifyPlaylistId: existingMatch.id,
+          aurralExported: false,
+          tracks: matches,
+        });
+        detail = 'restored missing record';
+      }
+      summary.skipped.push({
+        title: spec.title,
+        reason: 'already_exists',
+        detail,
+      });
       this.playlistsSkipped.inc({ reason: 'already_exists' });
       return;
     }
-    if (spec.tracks.length < MIN_LASTFM_TRACKS) {
+    if (spec.tracks.length < this.minLastfmTracks) {
       summary.skipped.push({
         title: spec.title,
         reason: 'insufficient_scrobbles',
@@ -133,30 +167,13 @@ export class GenerationService {
     }
 
     await onProgress(`Building "${spec.title}"`);
-    const matches: Array<{
-      lastfmArtist: string;
-      lastfmTitle: string;
-      spotifyTrackId: string | null;
-    }> = [];
-    for (const track of spec.tracks) {
-      const id = await this.spotify.findTrackId(ctx, track.artist, track.title);
-      matches.push({
-        lastfmArtist: track.artist,
-        lastfmTitle: track.title,
-        spotifyTrackId: id,
-      });
-      if (id) {
-        this.tracksMatched.inc();
-      } else {
-        this.tracksUnmatched.inc();
-      }
-    }
+    const matches = await this.matchTracks(ctx, spec.tracks);
 
     const matchedIds = matches
       .map((m) => m.spotifyTrackId)
       .filter((id): id is string => Boolean(id));
 
-    if (matchedIds.length < MIN_TRACKS_FOR_PLAYLIST) {
+    if (matchedIds.length < this.minTracksForPlaylist) {
       summary.skipped.push({
         title: spec.title,
         reason: 'insufficient_matches',
@@ -196,5 +213,32 @@ export class GenerationService {
 
     summary.created.push({ title: spec.title, tracks: matchedIds.length });
     this.playlistsCreated.inc({ period: spec.period });
+  }
+
+  private async matchTracks(
+    ctx: SpotifyTokenContext,
+    tracks: Track[],
+  ): Promise<
+    Array<{
+      lastfmArtist: string;
+      lastfmTitle: string;
+      spotifyTrackId: string | null;
+    }>
+  > {
+    const matches = [];
+    for (const track of tracks) {
+      const id = await this.spotify.findTrackId(ctx, track.artist, track.title);
+      matches.push({
+        lastfmArtist: track.artist,
+        lastfmTitle: track.title,
+        spotifyTrackId: id,
+      });
+      if (id) {
+        this.tracksMatched.inc();
+      } else {
+        this.tracksUnmatched.inc();
+      }
+    }
+    return matches;
   }
 }

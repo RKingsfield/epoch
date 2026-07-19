@@ -39,8 +39,8 @@ async function bootstrap() {
     exclude: ['health', 'metrics', 'spotify/callback', 'lastfm/callback'],
   });
 
-  const redisUrl = config.get<string>('REDIS_URL') ?? 'redis://redis:6379';
-  const sessionSecret = config.get<string>('SESSION_SECRET')!;
+  const redisUrl = config.getOrThrow<string>('REDIS_URL');
+  const sessionSecret = config.getOrThrow<string>('SESSION_SECRET');
 
   const redisLogger = new NestLogger('SessionRedis');
   const sessionClient = createClient({ url: redisUrl });
@@ -63,7 +63,7 @@ async function bootstrap() {
     }),
   );
 
-  const port = parseInt(config.get<string>('PORT') ?? '5342', 10);
+  const port = parseInt(config.getOrThrow<string>('PORT'), 10);
   await app.listen(port, '0.0.0.0');
 }
 bootstrap();

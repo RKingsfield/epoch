@@ -69,6 +69,19 @@ export class PlaylistsService {
     return playlist;
   }
 
+  async hasRecord(
+    userId: string,
+    period: PlaylistPeriod,
+    periodKey: string,
+  ): Promise<boolean> {
+    const found = await this.playlistModel.exists({
+      userId,
+      period,
+      periodKey,
+    });
+    return found !== null;
+  }
+
   async listForUser(userId: string): Promise<PlaylistSummary[]> {
     const playlists = await this.playlistModel
       .find({ userId })

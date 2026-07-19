@@ -12,16 +12,12 @@ export class AppService {
     private readonly config: ConfigService,
   ) {}
 
-  async getStatus(connected: {
-    lastfm: boolean;
-    spotify: boolean;
-  }): Promise<AuthStatus> {
+  async getStatus(
+    connected: { lastfm: boolean; spotify: boolean },
+    spotifyOauthState: string,
+  ): Promise<AuthStatus> {
     const publicUrl = this.publicUrl();
     return {
-      links: {
-        lastfm: `${publicUrl}/lastfm`,
-        spotify: `${publicUrl}/spotify`,
-      },
       status: {
         lastfm: connected.lastfm ? 'CONNECTED' : 'UNCONNECTED',
         spotify: connected.spotify ? 'CONNECTED' : 'UNCONNECTED',
@@ -30,13 +26,13 @@ export class AppService {
         lastfm: await this.lastfmAuth.getAuthUrl(publicUrl),
         spotify: this.spotifyAuth.getAuthUrl(
           `${publicUrl}/spotify/callback`,
-          'init',
+          spotifyOauthState,
         ),
       },
     };
   }
 
   private publicUrl(): string {
-    return this.config.get<string>('PUBLIC_URL') ?? 'http://localhost:5342';
+    return this.config.getOrThrow<string>('PUBLIC_URL');
   }
 }

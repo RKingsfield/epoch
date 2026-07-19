@@ -10,7 +10,7 @@ Last.fm has the longest-running scrobble history of any music tracking service. 
 
 A full generation run hits Last.fm for every year, season, and month in your listening history, then searches Spotify for each track. That's hundreds of API calls and can take several minutes. Running it synchronously would time out.
 
-BullMQ handles the queue. The frontend polls for progress with backoff from 1.5s to 5s. Not elegant, but simple and reliable. SSE is an option if polling becomes a problem.
+BullMQ handles the queue. The frontend streams progress over SSE, with the original 1.5s–5s backoff polling kept as an automatic fallback. Anything that breaks the stream (proxy buffering, old browsers) degrades to the simple path instead of a dead page.
 
 ## MongoDB for playlists and tracks
 

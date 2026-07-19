@@ -1,7 +1,4 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
-
-export type TrackDocument = HydratedDocument<Track>;
 
 @Schema({ timestamps: true })
 export class Track {
@@ -14,6 +11,12 @@ export class Track {
   @Prop()
   spotifyId!: string;
 
+  // Negative-cache marker: when set (and spotifyId absent), the last search
+  // found nothing. Re-checked after TRACK_MISS_RECHECK_DAYS so tracks that
+  // later appear on Spotify can still match.
+  @Prop()
+  notFoundAt?: Date;
+
   // True when the user explicitly chose this Spotify track via the rematch
   // UI. Manual overrides are sticky: cacheTrack() will not overwrite them
   // with results from automatic Spotify search, and findTrackId() returns
@@ -23,4 +26,7 @@ export class Track {
 }
 
 export const TrackSchema = SchemaFactory.createForClass(Track);
-TrackSchema.index({ artist: 1, title: 1 });
+// Unique so a racing automatic cacheTrack() can't insert a second row next
+// to a manual override — its filtered upsert fails with E11000 (caught and
+// logged) instead of silently duplicating the key.
+TrackSchema.index({ artist: 1, title: 1 }, { unique: true });

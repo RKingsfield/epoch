@@ -45,5 +45,8 @@ frontend/out
 frontend/node_modules
 frontend/tsconfig.tsbuildinfo
 
-# Static assets baked into prod image
-public/
+# Static assets baked into prod image (root only — frontend/public is source)
+/public/
+
+# Codebase review working doc
+REVIEW.md

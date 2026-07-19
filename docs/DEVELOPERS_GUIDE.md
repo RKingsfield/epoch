@@ -30,6 +30,12 @@ In your Spotify developer dashboard, add `http://localhost:5342/spotify/callback
 | `PORT` | no | `5342` | HTTP listen port |
 | `AURRAL_EXPORT_DIR` | no | unset | Set to enable Aurral JSON export |
 | `SEASONS_HEMISPHERE` | no | `north` | `north` or `south`, same dates, swapped season names |
+| `TOP_TRACKS_YEARLY` | no | `100` | Tracks pulled from Last.fm per year |
+| `TOP_TRACKS_SEASONAL` | no | `40` | Tracks pulled per season |
+| `TOP_TRACKS_MONTHLY` | no | `25` | Tracks pulled per month |
+| `MIN_TRACKS_FOR_PLAYLIST` | no | `10` | Skip a period with fewer Spotify matches |
+| `MIN_LASTFM_TRACKS` | no | `5` | Skip a period with fewer scrobbled tracks |
+| `TRACK_MISS_RECHECK_DAYS` | no | `30` | How long a failed Spotify match is cached before re-searching |
 
 ## Development
 

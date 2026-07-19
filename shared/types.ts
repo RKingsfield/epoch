@@ -19,7 +19,6 @@ export interface ProcessSummary {
 }
 
 export interface AuthStatus {
-  links: { lastfm: string; spotify: string };
   status: {
     lastfm: 'CONNECTED' | 'UNCONNECTED';
     spotify: 'CONNECTED' | 'UNCONNECTED';

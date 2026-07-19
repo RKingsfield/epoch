@@ -17,9 +17,9 @@ const PERIOD_GLYPH: Record<Period, string> = {
 const ALL_PERIODS: Period[] = ['yearly', 'seasonal', 'monthly'];
 
 function yearOf(p: PlaylistSummary): string {
-  // periodKey looks like "2024", "2024-spring", "2024-03"
-  const m = p.periodKey.match(/^(\d{4})/);
-  return m ? m[1] : '—';
+  // periodKey looks like "2024" (yearly), "summer-2019" (seasonal), "2024-03" (monthly)
+  const m = p.periodKey.match(/\d{4}/);
+  return m ? m[0] : '—';
 }
 
 export default function PlaylistsPage() {

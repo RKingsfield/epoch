@@ -14,6 +14,7 @@ function makeGenerator(hemisphere: string | undefined) {
   } as unknown as LastfmService;
   const config = {
     get: jest.fn().mockReturnValue(hemisphere),
+    getOrThrow: jest.fn().mockReturnValue('40'),
   } as unknown as ConfigService;
   return new SeasonalPeriodGenerator(lastfm, config);
 }

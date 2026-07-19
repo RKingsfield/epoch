@@ -1,0 +1,7 @@
+Fonts in this directory are redistributed under the SIL Open Font License 1.1
+(https://openfontlicense.org):
+
+- Orbitron — Copyright 2018 The Orbitron Project Authors
+  (https://github.com/theleagueof/orbitron)
+- JetBrains Mono — Copyright 2020 The JetBrains Mono Project Authors
+  (https://github.com/JetBrains/JetBrainsMono)

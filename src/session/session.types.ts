@@ -4,6 +4,7 @@ declare module 'express-session' {
   interface SessionData {
     lastfm?: LastfmSessionData;
     spotify?: SpotifySessionData;
+    spotifyOauthState?: string;
   }
 }
 

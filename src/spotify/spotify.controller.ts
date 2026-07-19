@@ -1,4 +1,13 @@
-import { Controller, Get, Query, Res, Session } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  Query,
+  Res,
+  Session,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
 import { SpotifySearchResult } from '../../shared/types';
@@ -15,28 +24,37 @@ export class SpotifyController {
     private readonly config: ConfigService,
   ) {}
 
-  @Get()
-  async status(@Session() session: AppSession): Promise<string> {
-    if (!session.spotify) {
-      return `Not signed into Spotify. Start session here: ${this.auth.getAuthUrl(
-        this.redirectUri(),
-        'init',
-      )}`;
-    }
-    const userData = await this.spotify.getUserData(
-      new SessionTokenContext(session),
-    );
-    return `Signed into Spotify as: ${userData.display_name}`;
-  }
-
   @Get('callback')
   async login(
     @Query('code') code: string,
+    @Query('state') state: string,
     @Session() session: AppSession,
     @Res() res: Response,
   ): Promise<void> {
+    if (
+      !code ||
+      !state ||
+      !session.spotifyOauthState ||
+      state !== session.spotifyOauthState
+    ) {
+      throw new BadRequestException('Invalid OAuth callback');
+    }
     session.spotify = await this.auth.exchangeCode(code, this.redirectUri());
     res.redirect('/');
+  }
+
+  @Get('tracks/:id')
+  async track(
+    @Session() session: AppSession,
+    @Param('id') id: string,
+  ): Promise<SpotifySearchResult> {
+    if (!session.spotify)
+      throw new BadRequestException('Spotify not connected');
+    try {
+      return await this.spotify.getTrack(new SessionTokenContext(session), id);
+    } catch {
+      throw new NotFoundException(`Track ${id} not found`);
+    }
   }
 
   @Get('search')
@@ -45,18 +63,17 @@ export class SpotifyController {
     @Query('q') q: string,
     @Query('limit') limit?: string,
   ): Promise<SpotifySearchResult[]> {
-    if (!session.spotify) return [];
+    if (!session.spotify)
+      throw new BadRequestException('Spotify not connected');
     if (!q || q.trim().length === 0) return [];
     return this.spotify.search(
       new SessionTokenContext(session),
       q.trim(),
-      Math.min(parseInt(limit ?? '10', 10) || 10, 25),
+      Math.min(Math.max(parseInt(limit ?? '10', 10) || 10, 1), 25),
     );
   }
 
   private redirectUri(): string {
-    const publicUrl =
-      this.config.get<string>('PUBLIC_URL') ?? 'http://localhost:5342';
-    return `${publicUrl}/spotify/callback`;
+    return `${this.config.getOrThrow<string>('PUBLIC_URL')}/spotify/callback`;
   }
 }

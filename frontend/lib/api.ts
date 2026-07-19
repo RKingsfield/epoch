@@ -4,7 +4,6 @@ export type {
   JobsListEntry,
   SkipReason,
   SkippedEntry,
-  ProcessSummary,
   PlaylistSummary,
   PlaylistDetail,
   SpotifySearchResult,
@@ -44,9 +43,15 @@ export const api = {
       body: JSON.stringify(periods ? { periods } : {}),
     }),
   job: (id: string) => request<JobSummary>(`/jobs/${id}`),
+  cancelJob: (id: string) =>
+    request<{ cancelled: true; mode: 'removed' | 'flagged' }>(`/jobs/${id}`, {
+      method: 'DELETE',
+    }),
   jobs: () => request<JobsListEntry[]>('/jobs'),
   playlists: () => request<PlaylistSummary[]>('/playlists'),
   playlist: (id: string) => request<PlaylistDetail>(`/playlists/${id}`),
+  spotifyTrack: (id: string) =>
+    request<SpotifySearchResult>(`/spotify/tracks/${id}`),
   spotifySearch: (q: string, limit = 8) =>
     request<SpotifySearchResult[]>(
       `/spotify/search?q=${encodeURIComponent(q)}&limit=${limit}`,

@@ -37,7 +37,7 @@ A generation request moves through four layers:
 1. **Frontend** POSTs to `/api/v1/jobs/generate` with an optional period filter. The controller snapshots the user's Last.fm and Spotify session tokens into a BullMQ job payload and enqueues it.
 2. **BullMQ worker** picks up the job. The processor creates a `JobTokenContext` so that refreshed Spotify tokens survive mid-job by writing back to the job data via `job.updateData()`.
 3. **Generation service** iterates all registered `PeriodGenerator` implementations. Each generator fetches top tracks from Last.fm for its time windows, then the service searches Spotify for each track (checking the MongoDB cache first), creates playlists, and records everything.
-4. **Frontend polls** `GET /api/v1/jobs/:id` at 1.5s intervals (backing off to 5s when progress stalls) until the job completes or fails.
+4. **Frontend streams** job summaries from `GET /api/v1/jobs/:id/stream` (SSE) until the job completes or fails, falling back to 1.5s polling if the stream breaks.
 
 Rematches follow a different path: `PUT /api/v1/playlists/:id/tracks/:position` swaps the track on Spotify and in the DB, writes a canonical cache entry, and fans out to other playlists containing the same scrobble.
 
@@ -87,9 +87,12 @@ All paths under `/api/v1/` unless noted. OAuth callbacks stay at root because th
 | GET | `/lastfm/callback` | OAuth redirect (root path) |
 | GET | `/spotify/callback` | OAuth redirect (root path) |
 | GET | `/api/v1/spotify/search?q=&limit=` | Spotify search for the rematch modal |
+| GET | `/api/v1/spotify/tracks/:id` | Single track lookup (current match in the rematch modal) |
 | POST | `/api/v1/jobs/generate` | Start a generation job, returns `{jobId, statusUrl}` |
-| GET | `/api/v1/jobs` | Last 50 jobs |
+| GET | `/api/v1/jobs` | Current user's last 50 jobs |
 | GET | `/api/v1/jobs/:id` | Job state, progress, and result |
+| GET | `/api/v1/jobs/:id/stream` | SSE stream of job summaries (frontend falls back to polling) |
+| DELETE | `/api/v1/jobs/:id` | Cancel: removes waiting jobs, flags active ones to abort |
 | GET | `/api/v1/playlists` | Current user's playlists |
 | GET | `/api/v1/playlists/:id` | Single playlist with full track list |
 | PUT | `/api/v1/playlists/:id/tracks/:position` | Rematch a track (body: `{spotifyTrackId}`) |

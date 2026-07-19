@@ -1,16 +1,16 @@
 import type { Metadata } from 'next';
-import { Orbitron, JetBrains_Mono } from 'next/font/google';
+import localFont from 'next/font/local';
 import './globals.css';
 import { RunningJobBadge } from '../components/RunningJobBadge';
 
-const orbitron = Orbitron({
-  subsets: ['latin'],
-  weight: ['700', '900'],
+const orbitron = localFont({
+  src: '../public/fonts/orbitron-latin.woff2',
+  weight: '700 900',
   variable: '--font-orbitron',
 });
-const jetbrains = JetBrains_Mono({
-  subsets: ['latin'],
-  weight: ['400', '500'],
+const jetbrains = localFont({
+  src: '../public/fonts/jetbrains-mono-latin.woff2',
+  weight: '400 500',
   variable: '--font-jetbrains',
 });
 

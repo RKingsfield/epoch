@@ -16,16 +16,6 @@ epoch already exports track selections as JSON files that Aurral reads. A tighte
 
 With the adapter interface in place, Apple Music, Tidal, Deezer, and others become possible. None of these are planned, but the interface should make them straightforward to add.
 
-## UI and UX
+## Decided against
 
-**Show the current match in the rematch modal.** Right now you search for a replacement but can't see what you're replacing without going back to the playlist view. Needs a `GET /api/v1/spotify/tracks/:id` endpoint and a fixed row at the top of the modal.
-
-**Cancel a running job.** There's no way to stop a generation once it starts. Needs `DELETE /jobs/:id` on the backend (BullMQ supports `job.remove()` and `discard()`) and a cancel button on the job page.
-
-**SSE for job progress.** The job page polls on a 1.5s to 5s backoff. Server-sent events would be more responsive and use fewer requests. BullMQ already emits progress events internally, so the backend work is mostly wiring.
-
-**Proper route parameters.** `/job/?id=...` and `/playlist/?id=...` work but aren't great for sharing or bookmarking. Moving to `/job/:id` and `/playlist/:id` means dropping the static export and adding minimal SSR. Not hard, but it changes the deployment model.
-
-## Housekeeping
-
-**Self-host fonts.** Orbitron and JetBrains Mono load from Google Fonts. Move to `next/font/local` with files in `frontend/public/fonts/` so the app works fully offline.
+**Proper route parameters.** `/job/?id=...` and `/playlist/?id=...` are already linkable and bookmarkable. Moving to `/job/:id` would mean dropping the static export and running a Next server alongside NestJS: a deployment-model change for cosmetic URLs. Not worth it. Revisit only if an SSR need appears.

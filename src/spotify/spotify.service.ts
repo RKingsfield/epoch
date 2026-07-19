@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Model } from 'mongoose';
 import { Track as TrackModel } from './tracks/schemas/track.schema';
 import { SpotifyHttpClient } from './spotify-http.client';
@@ -12,10 +13,20 @@ const SPOTIFY_API = 'https://api.spotify.com';
 export class SpotifyService {
   private readonly logger = new Logger(SpotifyService.name);
 
+  private readonly missRecheckMs: number;
+
   constructor(
+    config: ConfigService,
     private readonly client: SpotifyHttpClient,
     @Inject(TrackModel.name) private readonly trackModel: Model<TrackModel>,
-  ) {}
+  ) {
+    this.missRecheckMs =
+      parseInt(config.getOrThrow<string>('TRACK_MISS_RECHECK_DAYS'), 10) *
+      24 *
+      60 *
+      60 *
+      1000;
+  }
 
   async getUserData(ctx: SpotifyTokenContext): Promise<UserDataResponse> {
     return this.client.get<UserDataResponse>(`${SPOTIFY_API}/v1/me`, ctx);
@@ -27,7 +38,13 @@ export class SpotifyService {
     title: string,
   ): Promise<string | null> {
     const cached = await this.trackModel.findOne({ artist, title });
-    if (cached) return cached.spotifyId || null;
+    if (cached) {
+      if (cached.spotifyId) return cached.spotifyId;
+      const missAge = cached.notFoundAt
+        ? Date.now() - cached.notFoundAt.getTime()
+        : 0;
+      if (missAge < this.missRecheckMs) return null;
+    }
 
     const params = new URLSearchParams({
       q: `${title} artist:${artist}`,
@@ -58,9 +75,21 @@ export class SpotifyService {
           spotifyId: spotifyTrackId,
           manualOverride: true,
         },
+        $unset: { notFoundAt: 1 },
       },
       { upsert: true },
     );
+  }
+
+  async getTrack(
+    ctx: SpotifyTokenContext,
+    trackId: string,
+  ): Promise<SpotifySearchResult> {
+    const item = await this.client.get<SpotifyTrackItem>(
+      `${SPOTIFY_API}/v1/tracks/${trackId}`,
+      ctx,
+    );
+    return this.toSpotifySearchResult(item);
   }
 
   async search(
@@ -173,12 +202,13 @@ export class SpotifyService {
     title: string,
     spotifyId: string | null,
   ): Promise<void> {
-    if (!spotifyId) return;
     try {
-      // Don't clobber a manual override with an automatic match.
+      // Don't clobber a manual override with an automatic result.
       await this.trackModel.updateOne(
         { artist, title, manualOverride: { $ne: true } },
-        { $set: { artist, title, spotifyId } },
+        spotifyId
+          ? { $set: { artist, title, spotifyId }, $unset: { notFoundAt: 1 } }
+          : { $set: { artist, title, notFoundAt: new Date() } },
         { upsert: true },
       );
     } catch (err: unknown) {

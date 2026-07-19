@@ -1,4 +1,4 @@
-export const STATE_TONE_TEXT: Record<string, string> = {
+const STATE_TONE_TEXT: Record<string, string> = {
   completed: 'text-[var(--color-success)]',
   failed: 'text-[var(--color-danger)]',
   active: 'text-[var(--color-cyan)]',
@@ -6,7 +6,7 @@ export const STATE_TONE_TEXT: Record<string, string> = {
   delayed: 'text-[var(--color-yellow)]',
 };
 
-export const STATE_TONE_BORDER: Record<string, string> = {
+const STATE_TONE_BORDER: Record<string, string> = {
   completed: 'text-[var(--color-success)] border-[var(--color-success)]',
   failed: 'text-[var(--color-danger)] border-[var(--color-danger)]',
   active: 'text-[var(--color-cyan)] border-[var(--color-cyan)]',

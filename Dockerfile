@@ -16,7 +16,7 @@ COPY . .
 RUN npm run build
 
 FROM base AS test
-RUN npm test
+RUN npm test && npm run test:e2e
 
 FROM deps AS production
 ENV NODE_ENV=production

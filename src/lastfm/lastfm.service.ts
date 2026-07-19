@@ -5,7 +5,7 @@ import { XMLParser } from 'fast-xml-parser';
 import { endOfDay, subDays } from 'date-fns';
 import { LastfmConfig } from './lastfm.config';
 import { LastfmSessionData } from '../session/session.types';
-import { errorMessage, httpStatus } from '../utils/errors';
+import { httpStatus } from '../utils/errors';
 
 const LASTFM_API_URL = 'https://ws.audioscrobbler.com/2.0/';
 const xmlParser = new XMLParser({ ignoreAttributes: true });
@@ -45,30 +45,26 @@ export class LastfmService {
       to: endDate,
       api_key: this.config.apiKey(),
     });
-    try {
-      const res = await this.processXMLQuery(
-        `${LASTFM_API_URL}?${params.toString()}`,
-      );
-      const tracks = res?.lfm?.weeklytrackchart?.track;
-      if (!tracks) return [];
-      return (Array.isArray(tracks) ? tracks : [tracks]).slice(0, amount);
-    } catch (err: unknown) {
-      this.logger.warn(
-        `Last.fm getTop ${username} ${startDate}-${endDate} failed after retry: ${errorMessage(err)}`,
-      );
-      return [];
-    }
+    // Failures propagate (after the retry) rather than returning [] — an
+    // empty chart and a Last.fm outage must not look the same to callers,
+    // or outages get reported as "not enough scrobbles".
+    const res = await this.processXMLQuery(
+      `${LASTFM_API_URL}?${params.toString()}`,
+    );
+    const tracks = res?.lfm?.weeklytrackchart?.track;
+    if (!tracks) return [];
+    return (Array.isArray(tracks) ? tracks : [tracks]).slice(0, amount);
   }
 
   async getTopOfYear(
     session: LastfmSessionData,
     year: number,
-    amount = 100,
+    amount: number,
   ): Promise<Track[]> {
     const tracks = await this.getTop(
       session.name,
-      String(new Date(year + '-01-01').getTime() / 1000),
-      String(Math.floor(endOfDay(new Date(year + '-12-31')).getTime() / 1000)),
+      String(new Date(year, 0, 1).getTime() / 1000),
+      String(Math.floor(endOfDay(new Date(year, 11, 31)).getTime() / 1000)),
       amount,
     );
     return tracks.map((t) => ({ artist: t.artist, title: t.name }));
@@ -78,7 +74,7 @@ export class LastfmService {
     session: LastfmSessionData,
     startDate: Date,
     endDate: Date,
-    amount = 40,
+    amount: number,
   ): Promise<Track[]> {
     const tracks = await this.getTop(
       session.name,
@@ -94,7 +90,7 @@ export class LastfmService {
   async getTopOfMonth(
     session: LastfmSessionData,
     month: Date,
-    amount = 25,
+    amount: number,
   ): Promise<Track[]> {
     const tracks = await this.getTop(
       session.name,

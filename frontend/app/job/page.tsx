@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { api, JobSummary, SkipReason, SkippedEntry } from '../../lib/api';
 import { tone, TERMINAL_STATES } from '../../lib/state-tone';
 
@@ -50,25 +50,57 @@ function StateBadge({ state }: { state: string }) {
   );
 }
 
+const CANCELLABLE_STATES = new Set(['active', 'waiting', 'delayed']);
+
 function JobInner() {
   const params = useSearchParams();
+  const router = useRouter();
   const id = params.get('id');
   const [job, setJob] = useState<JobSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [aborting, setAborting] = useState<'requesting' | 'requested' | null>(
+    null,
+  );
   const lastChangeRef = useRef<{ message: string | null; at: number } | null>(null);
+
+  async function abort() {
+    if (!id) return;
+    setAborting('requesting');
+    try {
+      const { mode } = await api.cancelJob(id);
+      if (mode === 'removed') {
+        router.push('/jobs/');
+        return;
+      }
+      setAborting('requested');
+    } catch (e) {
+      setError(String(e));
+      setAborting(null);
+    }
+  }
 
   useEffect(() => {
     if (!id) return;
     let alive = true;
     let timer: ReturnType<typeof setTimeout> | null = null;
+    let loaded = false;
+    let done = false;
+    let es: EventSource | null = null;
     lastChangeRef.current = null;
+
+    function apply(next: JobSummary) {
+      loaded = true;
+      setJob(next);
+      setError(null);
+      if (TERMINAL_STATES.has(next.state)) done = true;
+      return done;
+    }
 
     async function tick() {
       try {
         const next = await api.job(id!);
         if (!alive) return;
-        setJob(next);
-        if (TERMINAL_STATES.has(next.state)) return;
+        if (apply(next)) return;
 
         const message =
           typeof next.progress === 'object' && next.progress?.message
@@ -85,12 +117,32 @@ function JobInner() {
       } catch (e) {
         if (!alive) return;
         setError(String(e));
+        // A blip mid-run shouldn't kill a live job view; an id that never
+        // loaded won't start loading on retry, so give up on those.
+        if (loaded) timer = setTimeout(tick, POLL_MS_SLOW);
       }
     }
 
-    tick();
+    // Live updates via SSE, with the poll loop as fallback for anything
+    // that breaks the stream (proxy buffering, old browsers, server close).
+    es = new EventSource(`/api/v1/jobs/${id}/stream`);
+    es.onmessage = (e) => {
+      if (!alive) return;
+      if (apply(JSON.parse(e.data) as JobSummary)) {
+        es?.close();
+        es = null;
+      }
+    };
+    es.onerror = () => {
+      if (!alive || done) return;
+      es?.close();
+      es = null;
+      tick();
+    };
+
     return () => {
       alive = false;
+      es?.close();
       if (timer) clearTimeout(timer);
     };
   }, [id]);
@@ -128,7 +180,23 @@ function JobInner() {
               {job.id}
             </p>
           </div>
-          <StateBadge state={job.state} />
+          <div className="flex items-center gap-3">
+            {CANCELLABLE_STATES.has(job.state) && (
+              <button
+                type="button"
+                onClick={abort}
+                disabled={aborting !== null}
+                className="border border-[var(--color-danger)]/60 px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-[0.3em] text-[var(--color-danger)] transition hover:bg-[var(--color-danger)] hover:text-[var(--color-bg)] disabled:opacity-40"
+              >
+                {aborting === 'requested'
+                  ? 'abort requested'
+                  : aborting === 'requesting'
+                    ? 'aborting…'
+                    : 'abort'}
+              </button>
+            )}
+            <StateBadge state={job.state} />
+          </div>
         </div>
         <dl className="mt-6 grid grid-cols-2 gap-4 font-mono text-xs">
           <div>
@@ -148,6 +216,11 @@ function JobInner() {
             </dd>
           </div>
         </dl>
+        {error && !TERMINAL_STATES.has(job.state) && (
+          <p className="mt-4 font-mono text-xs text-[var(--color-danger)]">
+            ! poll failed, retrying — {error}
+          </p>
+        )}
         {message && !TERMINAL_STATES.has(job.state) && (
           <div className="mt-6 flex items-center gap-3 border border-[var(--color-cyan)]/40 bg-[var(--color-bg-deep)]/60 p-4">
             <span className="live-dot inline-block h-2 w-2 rounded-full bg-[var(--color-cyan)] text-[var(--color-cyan)]" />

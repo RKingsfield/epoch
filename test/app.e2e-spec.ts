@@ -10,11 +10,13 @@ import { PlaylistsController } from '../src/playlists/playlists.controller';
 import { PlaylistsService } from '../src/playlists/playlists.service';
 import { SpotifyService } from '../src/spotify/spotify.service';
 import { HttpExceptionFilter } from '../src/filters/http-exception.filter';
-import { PLAYLIST_QUEUE } from '../src/jobs/playlist-generation.processor';
+import {
+  PLAYLIST_QUEUE,
+  PLAYLIST_QUEUE_EVENTS,
+} from '../src/jobs/playlist-generation.processor';
 import { AuthStatus } from '../shared/types';
 
 const MOCK_STATUS: AuthStatus = {
-  links: { lastfm: 'http://test/lastfm', spotify: 'http://test/spotify' },
   status: { lastfm: 'UNCONNECTED', spotify: 'UNCONNECTED' },
   loginUrls: {
     lastfm: 'https://last.fm/api/auth?api_key=test',
@@ -40,6 +42,10 @@ describe('App (e2e)', () => {
             getJobs: jest.fn().mockResolvedValue([]),
             getJob: jest.fn(),
           },
+        },
+        {
+          provide: PLAYLIST_QUEUE_EVENTS,
+          useValue: { on: jest.fn(), off: jest.fn() },
         },
         { provide: PlaylistsService, useValue: {} },
         { provide: SpotifyService, useValue: {} },
@@ -78,7 +84,6 @@ describe('App (e2e)', () => {
       .get('/api/v1/status')
       .expect(200)
       .expect((res) => {
-        expect(res.body).toHaveProperty('links');
         expect(res.body).toHaveProperty('status');
         expect(res.body).toHaveProperty('loginUrls');
         expect(res.body.status.lastfm).toBe('UNCONNECTED');

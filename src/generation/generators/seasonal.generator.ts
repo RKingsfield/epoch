@@ -9,11 +9,17 @@ import { PeriodGenerator, PeriodSpec } from '../period-generator';
 export class SeasonalPeriodGenerator implements PeriodGenerator {
   readonly period = 'seasonal' as const;
   readonly label = 'seasonal';
+  private readonly amount: number;
 
   constructor(
     private readonly lastfm: LastfmService,
     private readonly config: ConfigService,
-  ) {}
+  ) {
+    this.amount = parseInt(
+      config.getOrThrow<string>('TOP_TRACKS_SEASONAL'),
+      10,
+    );
+  }
 
   async specs(
     session: LastfmSessionData,
@@ -34,6 +40,7 @@ export class SeasonalPeriodGenerator implements PeriodGenerator {
           session,
           season.start,
           season.end,
+          this.amount,
         ),
       });
     }

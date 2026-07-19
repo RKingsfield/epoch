@@ -32,9 +32,22 @@ export function RematchModal({
 }: Props) {
   const [query, setQuery] = useState(`${artist} ${title}`);
   const [results, setResults] = useState<SpotifySearchResult[]>([]);
+  const [current, setCurrent] = useState<SpotifySearchResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!currentTrackId) return;
+    let alive = true;
+    api
+      .spotifyTrack(currentTrackId)
+      .then((t) => alive && setCurrent(t))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [currentTrackId]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -111,6 +124,32 @@ export function RematchModal({
           Scrobble: <span className="text-[var(--color-cyan)]">{title}</span> ·{' '}
           <span className="text-[var(--color-cyan)]">{artist}</span>
         </p>
+
+        {current && (
+          <div className="mt-3 flex items-center gap-3 border border-[var(--color-yellow)]/40 bg-[var(--color-bg-deep)]/60 px-2 py-2">
+            {current.albumArt ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={current.albumArt}
+                alt=""
+                className="h-12 w-12 rounded-none object-cover ring-1 ring-[var(--color-yellow)]/30"
+              />
+            ) : (
+              <div className="h-12 w-12 rounded-none bg-[var(--color-surface-2)] ring-1 ring-[var(--color-border-soft)]" />
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="truncate font-mono text-sm text-[var(--color-text)]">
+                {current.name}
+              </div>
+              <div className="truncate font-mono text-xs text-[var(--color-text-muted)]">
+                {current.artists.join(', ')} · {current.album}
+              </div>
+            </div>
+            <span className="font-mono text-xs uppercase tracking-widest text-[var(--color-yellow)]">
+              ▸ current · {formatDuration(current.durationMs)}
+            </span>
+          </div>
+        )}
 
         <input
           autoFocus
