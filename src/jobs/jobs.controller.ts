@@ -57,8 +57,8 @@ export class JobsController {
       ...(body.periods && { periods: body.periods }),
     };
     const job = await this.queue.add(GENERATE_JOB, data, {
-      removeOnComplete: { age: 60 * 60 * 24 * 7 },
-      removeOnFail: { age: 60 * 60 * 24 * 7 },
+      removeOnComplete: { age: 60 * 60 * 24 },
+      removeOnFail: { age: 60 * 60 * 24 },
     });
     return { jobId: job.id!, statusUrl: `/api/v1/jobs/${job.id}` };
   }
