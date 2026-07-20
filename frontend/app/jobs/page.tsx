@@ -8,11 +8,10 @@ import { NotConnected } from '../../components/NotConnected';
 
 export default function JobsListPage() {
   const { data: status, error: statusError } = useApi(() => api.status(), []);
-  const ready =
-    status?.status.lastfm === 'CONNECTED' && status?.status.spotify === 'CONNECTED';
+  const lastfmReady = status?.status.lastfm === 'CONNECTED';
   const { data: jobs, error: jobsError } = useApi(
-    ready ? () => api.jobs() : null,
-    [ready],
+    lastfmReady ? () => api.jobs() : null,
+    [lastfmReady],
   );
 
   const error = statusError ?? jobsError;
@@ -26,7 +25,7 @@ export default function JobsListPage() {
       </p>
     );
   }
-  if (!ready) {
+  if (!lastfmReady) {
     return <NotConnected what="the job log" />;
   }
 

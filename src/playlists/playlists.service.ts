@@ -53,19 +53,30 @@ export class PlaylistsService {
       { upsert: true, new: true, setDefaultsOnInsert: true },
     );
 
-    await this.trackModel.deleteMany({ playlistId: playlist._id });
     if (input.tracks.length > 0) {
-      await this.trackModel.insertMany(
+      await this.trackModel.bulkWrite(
         input.tracks.map((t, i) => ({
-          playlistId: playlist._id,
-          position: i,
-          lastfmArtist: t.lastfmArtist,
-          lastfmTitle: t.lastfmTitle,
-          spotifyTrackId: t.spotifyTrackId ?? undefined,
-          matchedAt: t.spotifyTrackId ? new Date() : undefined,
+          updateOne: {
+            filter: { playlistId: playlist._id, position: i },
+            update: {
+              $set: {
+                lastfmArtist: t.lastfmArtist,
+                lastfmTitle: t.lastfmTitle,
+                spotifyTrackId: t.spotifyTrackId ?? undefined,
+                matchedAt: t.spotifyTrackId ? new Date() : undefined,
+                manualOverride: false,
+              },
+            },
+            upsert: true,
+          },
         })),
+        { ordered: true },
       );
     }
+    await this.trackModel.deleteMany({
+      playlistId: playlist._id,
+      position: { $gte: input.tracks.length },
+    });
     return playlist;
   }
 
@@ -85,7 +96,7 @@ export class PlaylistsService {
   async listForUser(userId: string): Promise<PlaylistSummary[]> {
     const playlists = await this.playlistModel
       .find({ userId })
-      .sort({ createdAt: -1 })
+      .sort({ periodKey: -1 })
       .lean()
       .exec();
 

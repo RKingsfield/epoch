@@ -17,6 +17,7 @@ function mockTrackModel() {
   return {
     deleteMany: jest.fn().mockResolvedValue({ deletedCount: 0 }),
     insertMany: jest.fn().mockResolvedValue([]),
+    bulkWrite: jest.fn().mockResolvedValue({ ok: 1 }),
     find: jest.fn(),
     aggregate: jest.fn().mockResolvedValue([]),
     updateOne: jest.fn().mockResolvedValue({ modifiedCount: 1 }),
@@ -94,31 +95,48 @@ describe('PlaylistsService', () => {
         }),
         { upsert: true, new: true, setDefaultsOnInsert: true },
       );
-      expect(trackModel.deleteMany).toHaveBeenCalledWith({ playlistId: id });
-      expect(trackModel.insertMany).toHaveBeenCalledWith([
-        expect.objectContaining({
-          playlistId: id,
-          position: 0,
-          lastfmArtist: 'Burial',
-          lastfmTitle: 'Archangel',
-          spotifyTrackId: 'sp-a',
-          matchedAt: expect.any(Date),
-        }),
-        expect.objectContaining({
-          playlistId: id,
-          position: 1,
-          lastfmArtist: 'Air',
-          lastfmTitle: "La Femme d'Argent",
-          spotifyTrackId: undefined,
-          matchedAt: undefined,
-        }),
-      ]);
+      expect(trackModel.bulkWrite).toHaveBeenCalledWith(
+        [
+          expect.objectContaining({
+            updateOne: expect.objectContaining({
+              filter: { playlistId: id, position: 0 },
+              update: {
+                $set: expect.objectContaining({
+                  lastfmArtist: 'Burial',
+                  lastfmTitle: 'Archangel',
+                  spotifyTrackId: 'sp-a',
+                  matchedAt: expect.any(Date),
+                }),
+              },
+              upsert: true,
+            }),
+          }),
+          expect.objectContaining({
+            updateOne: expect.objectContaining({
+              filter: { playlistId: id, position: 1 },
+              update: {
+                $set: expect.objectContaining({
+                  lastfmArtist: 'Air',
+                  lastfmTitle: "La Femme d'Argent",
+                  spotifyTrackId: undefined,
+                  matchedAt: undefined,
+                }),
+              },
+              upsert: true,
+            }),
+          }),
+        ],
+        { ordered: true },
+      );
+      expect(trackModel.deleteMany).toHaveBeenCalledWith({
+        playlistId: id,
+        position: { $gte: 2 },
+      });
     });
 
-    it('skips insertMany when tracks is empty', async () => {
-      playlistModel.findOneAndUpdate.mockResolvedValue({
-        _id: new Types.ObjectId(),
-      });
+    it('skips bulkWrite when tracks is empty', async () => {
+      const id = new Types.ObjectId();
+      playlistModel.findOneAndUpdate.mockResolvedValue({ _id: id });
       await service.record({
         userId: 'r',
         title: 't',
@@ -128,7 +146,11 @@ describe('PlaylistsService', () => {
         aurralExported: false,
         tracks: [],
       });
-      expect(trackModel.insertMany).not.toHaveBeenCalled();
+      expect(trackModel.bulkWrite).not.toHaveBeenCalled();
+      expect(trackModel.deleteMany).toHaveBeenCalledWith({
+        playlistId: id,
+        position: { $gte: 0 },
+      });
     });
   });
 

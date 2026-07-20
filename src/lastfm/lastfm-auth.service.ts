@@ -15,7 +15,7 @@ export class LastfmAuthService {
     private readonly config: LastfmConfig,
   ) {}
 
-  async getAuthUrl(publicUrl: string): Promise<string> {
+  getAuthUrl(publicUrl: string): string {
     const params = new URLSearchParams({
       api_key: this.config.apiKey(),
       cb: `${publicUrl}/lastfm/callback`,

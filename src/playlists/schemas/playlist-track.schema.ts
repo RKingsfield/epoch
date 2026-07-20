@@ -33,4 +33,4 @@ export class PlaylistTrack {
 }
 
 export const PlaylistTrackSchema = SchemaFactory.createForClass(PlaylistTrack);
-PlaylistTrackSchema.index({ playlistId: 1, position: 1 });
+PlaylistTrackSchema.index({ playlistId: 1, position: 1 }, { unique: true });

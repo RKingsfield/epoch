@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { api, JobsListEntry } from '../lib/api';
+import { ACTIVE_JOB_STATES } from '../lib/state-tone';
 
 const POLL_MS = 10_000;
-const ACTIVE_STATES = new Set(['active', 'waiting', 'delayed']);
 const STORAGE_KEY = 'epoch:has-active-job';
 
 export function RunningJobBadge() {
@@ -20,7 +20,7 @@ export function RunningJobBadge() {
       try {
         const jobs = await api.jobs();
         if (!alive) return;
-        const running = jobs.find((j) => ACTIVE_STATES.has(j.state)) ?? null;
+        const running = jobs.find((j) => ACTIVE_JOB_STATES.has(j.state)) ?? null;
         setActiveJob(running);
         if (!running) {
           sessionStorage.removeItem(STORAGE_KEY);

@@ -24,7 +24,7 @@ async function bootstrap() {
   const config = app.get(ConfigService);
 
   app.enableCors({
-    origin: config.get<string>('PUBLIC_URL'),
+    origin: config.getOrThrow<string>('PUBLIC_URL'),
     credentials: true,
   });
 
@@ -57,7 +57,7 @@ async function bootstrap() {
       cookie: {
         httpOnly: true,
         sameSite: 'lax',
-        secure: config.get<string>('NODE_ENV') === 'production',
+        secure: config.getOrThrow<string>('NODE_ENV') === 'production',
         maxAge: 1000 * 60 * 60 * 24 * 30,
       },
     }),

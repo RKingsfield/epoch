@@ -83,15 +83,11 @@ export class SpotifyAuthService {
   }
 
   private getClientId(): string {
-    const id = this.config.get<string>('SPOTIFY_CLIENT_ID');
-    if (!id) throw new Error('SPOTIFY_CLIENT_ID missing');
-    return id;
+    return this.config.getOrThrow<string>('SPOTIFY_CLIENT_ID');
   }
 
   private getClientSecret(): string {
-    const secret = this.config.get<string>('SPOTIFY_CLIENT_SECRET');
-    if (!secret) throw new Error('SPOTIFY_CLIENT_SECRET missing');
-    return secret;
+    return this.config.getOrThrow<string>('SPOTIFY_CLIENT_SECRET');
   }
 }
 

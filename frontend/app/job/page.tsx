@@ -3,7 +3,9 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api, JobSummary, SkipReason, SkippedEntry } from '../../lib/api';
-import { tone, TERMINAL_STATES } from '../../lib/state-tone';
+import { tone, TERMINAL_JOB_STATES, ACTIVE_JOB_STATES } from '../../lib/state-tone';
+import { Card, CardSubtitle, CardTitle } from '../../components/ui/Card';
+import { LinkButton } from '../../components/ui/Button';
 
 const SKIP_REASON_LABEL: Record<SkipReason, string> = {
   already_exists: 'Already on Spotify',
@@ -30,8 +32,6 @@ function groupSkipped(items: SkippedEntry[]): Array<[SkipReason, SkippedEntry[]]
   }
   return SKIP_REASON_ORDER.filter((r) => map.has(r)).map((r) => [r, map.get(r)!]);
 }
-import { Card, CardSubtitle, CardTitle } from '../../components/ui/Card';
-import { LinkButton } from '../../components/ui/Button';
 
 const POLL_MS_FAST = 1500;
 const POLL_MS_SLOW = 5000;
@@ -50,7 +50,6 @@ function StateBadge({ state }: { state: string }) {
   );
 }
 
-const CANCELLABLE_STATES = new Set(['active', 'waiting', 'delayed']);
 
 function JobInner() {
   const params = useSearchParams();
@@ -92,7 +91,7 @@ function JobInner() {
       loaded = true;
       setJob(next);
       setError(null);
-      if (TERMINAL_STATES.has(next.state)) done = true;
+      if (TERMINAL_JOB_STATES.has(next.state)) done = true;
       return done;
     }
 
@@ -181,7 +180,7 @@ function JobInner() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            {CANCELLABLE_STATES.has(job.state) && (
+            {ACTIVE_JOB_STATES.has(job.state) && (
               <button
                 type="button"
                 onClick={abort}
@@ -216,12 +215,12 @@ function JobInner() {
             </dd>
           </div>
         </dl>
-        {error && !TERMINAL_STATES.has(job.state) && (
+        {error && !TERMINAL_JOB_STATES.has(job.state) && (
           <p className="mt-4 font-mono text-xs text-[var(--color-danger)]">
             ! poll failed, retrying — {error}
           </p>
         )}
-        {message && !TERMINAL_STATES.has(job.state) && (
+        {message && !TERMINAL_JOB_STATES.has(job.state) && (
           <div className="mt-6 flex items-center gap-3 border border-[var(--color-cyan)]/40 bg-[var(--color-bg-deep)]/60 p-4">
             <span className="live-dot inline-block h-2 w-2 rounded-full bg-[var(--color-cyan)] text-[var(--color-cyan)]" />
             <span className="font-mono text-sm text-[var(--color-text)]">

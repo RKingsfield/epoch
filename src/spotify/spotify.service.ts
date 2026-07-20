@@ -126,19 +126,17 @@ export class SpotifyService {
 
   async createPlaylist(
     ctx: SpotifyTokenContext,
+    userId: string,
     title: string,
     trackIds: string[],
   ): Promise<{ spotifyPlaylistId: string }> {
-    const userData = await this.getUserData(ctx);
     const playlist = await this.client.post<{ id: string }>(
-      `${SPOTIFY_API}/v1/users/${userData.id}/playlists`,
+      `${SPOTIFY_API}/v1/users/${userId}/playlists`,
       ctx,
       { name: title, public: false },
     );
 
-    const uris = trackIds
-      .filter((id) => id && id !== '')
-      .map((id) => `spotify:track:${id}`);
+    const uris = trackIds.map((id) => `spotify:track:${id}`);
 
     if (uris.length === 0) {
       this.logger.warn(

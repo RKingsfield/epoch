@@ -48,6 +48,7 @@ function makeService(opts: {
     getUserData: jest.fn().mockResolvedValue({ registered: '1500000000' }),
   } as unknown as LastfmService;
   const spotify = {
+    getUserData: jest.fn().mockResolvedValue({ id: 'spotify-user-1' }),
     getMyPlaylists: jest.fn().mockResolvedValue(opts.existingPlaylists ?? []),
     findTrackId: jest.fn((_ctx, artist: string, title: string) =>
       Promise.resolve(

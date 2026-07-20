@@ -1,10 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Counter } from 'prom-client';
-import {
-  SpotifyService,
-  SimplifiedPlaylistObj,
-} from '../spotify/spotify.service';
+import { SpotifyService, SimplifiedPlaylistObj } from '../spotify/spotify.service';
 import { SpotifyTokenContext } from '../spotify/spotify-token.context';
 import { AurralService } from '../aurral/aurral.service';
 import { LastfmService, Track } from '../lastfm/lastfm.service';
@@ -66,10 +63,13 @@ export class GenerationService {
     periods?: PlaylistPeriod[],
     shouldCancel: () => Promise<boolean> = async () => false,
   ): Promise<ProcessSummary> {
-    const userData = await this.lastfm.getUserData(lastfm);
-    const startDate = new Date(Number(userData.registered) * 1000);
+    const [lastfmUser, spotifyUser, existing] = await Promise.all([
+      this.lastfm.getUserData(lastfm),
+      this.spotify.getUserData(ctx),
+      this.spotify.getMyPlaylists(ctx),
+    ]);
+    const startDate = new Date(Number(lastfmUser.registered) * 1000);
     const endDate = new Date();
-    const existing = await this.spotify.getMyPlaylists(ctx);
 
     const filter = periods && periods.length > 0 ? new Set(periods) : null;
     const summary: ProcessSummary = { created: [], skipped: [] };
@@ -98,6 +98,7 @@ export class GenerationService {
         try {
           await this.tryCreate(
             lastfm.name,
+            spotifyUser.id,
             ctx,
             existing,
             spec,
@@ -121,6 +122,7 @@ export class GenerationService {
 
   private async tryCreate(
     userId: string,
+    spotifyUserId: string,
     ctx: SpotifyTokenContext,
     existing: SimplifiedPlaylistObj[],
     spec: PeriodSpec,
@@ -185,6 +187,7 @@ export class GenerationService {
 
     const { spotifyPlaylistId } = await this.spotify.createPlaylist(
       ctx,
+      spotifyUserId,
       spec.title,
       matchedIds,
     );

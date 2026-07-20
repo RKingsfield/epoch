@@ -75,3 +75,6 @@ export interface SpotifySearchResult {
   albumArt: string | null;
   durationMs: number;
 }
+
+export const TERMINAL_JOB_STATES = new Set(['completed', 'failed']);
+export const ACTIVE_JOB_STATES = new Set(['active', 'waiting', 'delayed']);

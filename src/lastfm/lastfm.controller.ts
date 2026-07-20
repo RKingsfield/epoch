@@ -10,6 +10,7 @@ import {
 import { Response } from 'express';
 import { LastfmAuthService } from './lastfm-auth.service';
 import { AppSession } from '../session/session.types';
+import { errorMessage } from '../utils/errors';
 
 @Controller('lastfm')
 export class LastfmController {
@@ -29,7 +30,7 @@ export class LastfmController {
     try {
       session.lastfm = await this.auth.exchangeToken(lastfmToken);
     } catch (err: unknown) {
-      this.logger.error(`Last.fm token exchange failed: ${(err as Error).message}`);
+      this.logger.error(`Last.fm token exchange failed: ${errorMessage(err)}`);
       throw new BadRequestException('Last.fm authentication failed');
     }
     res.redirect('/');

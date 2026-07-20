@@ -14,7 +14,7 @@ export class AppController {
   }
 
   @Get('status')
-  async getStatus(@Session() session: AppSession): Promise<AuthStatus> {
+  getStatus(@Session() session: AppSession): AuthStatus {
     session.spotifyOauthState ??= randomBytes(16).toString('hex');
     return this.appService.getStatus(
       {

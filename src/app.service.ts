@@ -12,10 +12,10 @@ export class AppService {
     private readonly config: ConfigService,
   ) {}
 
-  async getStatus(
+  getStatus(
     connected: { lastfm: boolean; spotify: boolean },
     spotifyOauthState: string,
-  ): Promise<AuthStatus> {
+  ): AuthStatus {
     const publicUrl = this.publicUrl();
     return {
       status: {
@@ -23,7 +23,7 @@ export class AppService {
         spotify: connected.spotify ? 'CONNECTED' : 'UNCONNECTED',
       },
       loginUrls: {
-        lastfm: await this.lastfmAuth.getAuthUrl(publicUrl),
+        lastfm: this.lastfmAuth.getAuthUrl(publicUrl),
         spotify: this.spotifyAuth.getAuthUrl(
           `${publicUrl}/spotify/callback`,
           spotifyOauthState,

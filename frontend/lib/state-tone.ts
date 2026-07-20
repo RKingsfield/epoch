@@ -1,3 +1,5 @@
+export { TERMINAL_JOB_STATES, ACTIVE_JOB_STATES } from '@shared/types';
+
 const STATE_TONE_TEXT: Record<string, string> = {
   completed: 'text-[var(--color-success)]',
   failed: 'text-[var(--color-danger)]',
@@ -13,8 +15,6 @@ const STATE_TONE_BORDER: Record<string, string> = {
   waiting: 'text-[var(--color-yellow)] border-[var(--color-yellow)]',
   delayed: 'text-[var(--color-yellow)] border-[var(--color-yellow)]',
 };
-
-export const TERMINAL_STATES = new Set(['completed', 'failed']);
 
 export function tone(state: string, withBorder = false): string {
   const map = withBorder ? STATE_TONE_BORDER : STATE_TONE_TEXT;

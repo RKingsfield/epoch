@@ -22,11 +22,15 @@ import {
   PLAYLIST_QUEUE,
   PLAYLIST_QUEUE_EVENTS,
 } from './playlist-generation.processor';
-import { ProcessSummary, JobSummary, JobsListEntry } from '../../shared/types';
+import {
+  ProcessSummary,
+  JobSummary,
+  JobsListEntry,
+  TERMINAL_JOB_STATES,
+} from '../../shared/types';
 import { GenerateDto } from './dto/generate.dto';
 import { AppSession } from '../session/session.types';
 
-const TERMINAL_STATES = new Set(['completed', 'failed']);
 const SSE_HEARTBEAT_MS = 15_000;
 
 @Controller('jobs')
@@ -154,7 +158,7 @@ export class JobsController {
           return;
         }
         subscriber.next({ data: summary });
-        if (TERMINAL_STATES.has(summary.state)) subscriber.complete();
+        if (TERMINAL_JOB_STATES.has(summary.state)) subscriber.complete();
       };
       const onEvent = ({ jobId }: { jobId: string }) => {
         if (jobId === id) void emit();
