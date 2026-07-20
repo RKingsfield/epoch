@@ -2,11 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import { createHash } from 'crypto';
-import { XMLParser } from 'fast-xml-parser';
-import { LastfmConfig } from './lastfm.config';
+import { LastfmConfig, lastfmXmlParser } from './lastfm.config';
 import { LastfmSessionData } from '../session/session.types';
 
-const xmlParser = new XMLParser({ ignoreAttributes: true });
 const LASTFM_AUTH_URL = 'https://www.last.fm/api/auth/';
 const LASTFM_API_URL = 'https://ws.audioscrobbler.com/2.0/';
 
@@ -35,7 +33,7 @@ export class LastfmAuthService {
     const response = await lastValueFrom(
       this.http.get(`${LASTFM_API_URL}?${signed}`),
     );
-    const json = xmlParser.parse(response.data);
+    const json = lastfmXmlParser.parse(response.data);
     return {
       name: json.lfm.session.name,
       key: json.lfm.session.key,

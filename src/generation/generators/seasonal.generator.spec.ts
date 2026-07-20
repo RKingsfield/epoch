@@ -5,23 +5,26 @@ import { LastfmSessionData } from '../../session/session.types';
 
 const session: LastfmSessionData = { name: 'testuser', key: 'k' };
 
-function makeGenerator(hemisphere: string | undefined) {
+function makeGenerator(hemisphere: string) {
   const lastfm = {
     getTopOfSeason: jest.fn().mockResolvedValue([
       { artist: 'Burial', title: 'Archangel' },
       { artist: 'Air', title: "La Femme d'Argent" },
     ]),
   } as unknown as LastfmService;
+  const values: Record<string, string> = {
+    TOP_TRACKS_SEASONAL: '40',
+    SEASONS_HEMISPHERE: hemisphere,
+  };
   const config = {
-    get: jest.fn().mockReturnValue(hemisphere),
-    getOrThrow: jest.fn().mockReturnValue('40'),
+    getOrThrow: jest.fn().mockImplementation((key: string) => values[key]),
   } as unknown as ConfigService;
   return new SeasonalPeriodGenerator(lastfm, config);
 }
 
 describe('SeasonalPeriodGenerator', () => {
-  it('emits Northern season names when SEASONS_HEMISPHERE is unset', async () => {
-    const gen = makeGenerator(undefined);
+  it('emits Northern season names when SEASONS_HEMISPHERE is north', async () => {
+    const gen = makeGenerator('north');
     const specs = await gen.specs(
       session,
       new Date(2024, 0, 1),

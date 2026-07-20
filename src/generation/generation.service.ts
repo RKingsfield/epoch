@@ -209,6 +209,14 @@ export class GenerationService {
       this.logger.error(
         `Failed to persist playlist record for "${spec.title}": ${errorMessage(err)}`,
       );
+      summary.created.push({ title: spec.title, tracks: matchedIds.length });
+      summary.skipped.push({
+        title: spec.title,
+        reason: 'error',
+        detail: 'Spotify playlist created but DB record failed — will heal on next run',
+      });
+      this.playlistsCreated.inc({ period: spec.period });
+      return;
     }
 
     summary.created.push({ title: spec.title, tracks: matchedIds.length });
@@ -225,20 +233,25 @@ export class GenerationService {
       spotifyTrackId: string | null;
     }>
   > {
-    const matches = [];
-    for (const track of tracks) {
-      const id = await this.spotify.findTrackId(ctx, track.artist, track.title);
-      matches.push({
-        lastfmArtist: track.artist,
-        lastfmTitle: track.title,
-        spotifyTrackId: id,
-      });
-      if (id) {
-        this.tracksMatched.inc();
-      } else {
-        this.tracksUnmatched.inc();
-      }
-    }
-    return matches;
+    const results = await Promise.all(
+      tracks.map(async (track) => {
+        const id = await this.spotify.findTrackId(
+          ctx,
+          track.artist,
+          track.title,
+        );
+        if (id) {
+          this.tracksMatched.inc();
+        } else {
+          this.tracksUnmatched.inc();
+        }
+        return {
+          lastfmArtist: track.artist,
+          lastfmTitle: track.title,
+          spotifyTrackId: id,
+        };
+      }),
+    );
+    return results;
   }
 }

@@ -45,6 +45,7 @@ export default function HomePage() {
       const periods = Array.from(selected);
       const arg = periods.length === 3 ? undefined : periods;
       const { jobId } = await api.enqueue(arg);
+      sessionStorage.setItem('epoch:has-active-job', '1');
       router.push(`/job/?id=${jobId}`);
     } catch (e) {
       setSubmitError(String(e));

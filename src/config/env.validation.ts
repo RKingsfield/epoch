@@ -14,6 +14,8 @@ const DEFAULTS: Record<string, string> = {
   PUBLIC_URL: 'http://localhost:5342',
   REDIS_URL: 'redis://redis:6379',
   PORT: '5342',
+  NODE_ENV: 'development',
+  SEASONS_HEMISPHERE: 'north',
   TOP_TRACKS_YEARLY: '100',
   TOP_TRACKS_SEASONAL: '40',
   TOP_TRACKS_MONTHLY: '25',

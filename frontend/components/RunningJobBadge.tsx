@@ -5,11 +5,14 @@ import { api, JobsListEntry } from '../lib/api';
 
 const POLL_MS = 10_000;
 const ACTIVE_STATES = new Set(['active', 'waiting', 'delayed']);
+const STORAGE_KEY = 'epoch:has-active-job';
 
 export function RunningJobBadge() {
   const [activeJob, setActiveJob] = useState<JobsListEntry | null>(null);
 
   useEffect(() => {
+    if (!sessionStorage.getItem(STORAGE_KEY)) return;
+
     let alive = true;
     let timer: ReturnType<typeof setTimeout> | null = null;
 
@@ -19,12 +22,15 @@ export function RunningJobBadge() {
         if (!alive) return;
         const running = jobs.find((j) => ACTIVE_STATES.has(j.state)) ?? null;
         setActiveJob(running);
+        if (!running) {
+          sessionStorage.removeItem(STORAGE_KEY);
+          return;
+        }
       } catch {
         if (!alive) return;
         setActiveJob(null);
-      } finally {
-        if (alive) timer = setTimeout(tick, POLL_MS);
       }
+      if (alive) timer = setTimeout(tick, POLL_MS);
     }
 
     tick();

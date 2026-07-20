@@ -1,19 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { XMLParser } from 'fast-xml-parser';
+
+export const lastfmXmlParser = new XMLParser({ ignoreAttributes: true });
 
 @Injectable()
 export class LastfmConfig {
   constructor(private readonly config: ConfigService) {}
 
   apiKey(): string {
-    const v = this.config.get<string>('LASTFM_API_KEY');
-    if (!v) throw new Error('LASTFM_API_KEY missing');
-    return v;
+    return this.config.getOrThrow<string>('LASTFM_API_KEY');
   }
 
   sharedSecret(): string {
-    const v = this.config.get<string>('LASTFM_SHARED_SECRET');
-    if (!v) throw new Error('LASTFM_SHARED_SECRET missing');
-    return v;
+    return this.config.getOrThrow<string>('LASTFM_SHARED_SECRET');
   }
 }

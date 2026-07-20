@@ -48,9 +48,9 @@ export class SeasonalPeriodGenerator implements PeriodGenerator {
   }
 
   private hemisphere(): Hemisphere {
-    const v = (
-      this.config.get<string>('SEASONS_HEMISPHERE') ?? 'north'
-    ).toLowerCase();
+    const v = this.config
+      .getOrThrow<string>('SEASONS_HEMISPHERE')
+      .toLowerCase();
     return v === 'south' ? 'south' : 'north';
   }
 }

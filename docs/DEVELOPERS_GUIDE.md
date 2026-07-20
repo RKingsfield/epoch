@@ -52,11 +52,10 @@ Frontend (Next.js 15, static export):
 ```bash
 cd frontend
 npm install
-npm run dev         # :3000, proxies API calls to :5342
 npm run build       # static export → frontend/out/
 ```
 
-The built frontend is served by the NestJS process in production. During development, the Next.js dev server runs separately on port 3000.
+The built frontend is served by the NestJS process. There is no separate frontend dev server — build the frontend, then start the backend with `npm run start:dev`. The static output at `frontend/out/` is copied to `public/` in the Docker image.
 
 ## Adding a new playlist period
 

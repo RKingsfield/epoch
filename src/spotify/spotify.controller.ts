@@ -15,6 +15,7 @@ import { SpotifyService } from './spotify.service';
 import { SpotifyAuthService } from './spotify-auth.service';
 import { SessionTokenContext } from './spotify-token.context';
 import { AppSession } from '../session/session.types';
+import { httpStatus } from '../utils/errors';
 
 @Controller('spotify')
 export class SpotifyController {
@@ -52,8 +53,10 @@ export class SpotifyController {
       throw new BadRequestException('Spotify not connected');
     try {
       return await this.spotify.getTrack(new SessionTokenContext(session), id);
-    } catch {
-      throw new NotFoundException(`Track ${id} not found`);
+    } catch (err: unknown) {
+      if (httpStatus(err) === 404)
+        throw new NotFoundException(`Track ${id} not found`);
+      throw err;
     }
   }
 

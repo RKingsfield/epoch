@@ -1,14 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
-import { XMLParser } from 'fast-xml-parser';
 import { endOfDay, subDays } from 'date-fns';
-import { LastfmConfig } from './lastfm.config';
+import { LastfmConfig, lastfmXmlParser } from './lastfm.config';
 import { LastfmSessionData } from '../session/session.types';
 import { httpStatus } from '../utils/errors';
 
 const LASTFM_API_URL = 'https://ws.audioscrobbler.com/2.0/';
-const xmlParser = new XMLParser({ ignoreAttributes: true });
 
 @Injectable()
 export class LastfmService {
@@ -113,7 +111,7 @@ export class LastfmService {
     const response = await this.fetchWithRetry(() =>
       lastValueFrom(this.http.get(url)),
     );
-    return xmlParser.parse(response.data);
+    return lastfmXmlParser.parse(response.data);
   }
 
   private async fetchWithRetry<T>(
