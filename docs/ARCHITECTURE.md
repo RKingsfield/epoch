@@ -45,11 +45,11 @@ Rematches follow a different path: `PUT /api/v1/playlists/:id/tracks/:position` 
 
 Three MongoDB collections:
 
-**`playlists`** — one document per generated playlist. Keyed by `(userId, period, periodKey)` with a unique compound index. Re-generating the same period upserts rather than duplicating.
+**`playlists`**: one document per generated playlist. Keyed by `(userId, period, periodKey)` with a unique compound index. Re-generating the same period upserts rather than duplicating.
 
-**`playlisttracks`** — one document per track per playlist, linked by `playlistId` and `position`. Stores both the Last.fm metadata (artist, title) and the Spotify match (track ID, manual override flag). On re-generation, all tracks for a playlist are deleted and re-inserted.
+**`playlisttracks`**: one document per track per playlist, linked by `playlistId` and `position`. Stores both the Last.fm metadata (artist, title) and the Spotify match (track ID, manual override flag). On re-generation, all tracks for a playlist are deleted and re-inserted.
 
-**`tracks`** — the global Spotify match cache. Keyed by `(artist, title)`. When `manualOverride` is true, generation skips Spotify search and uses this match directly. Automatic cache writes won't overwrite a manual entry.
+**`tracks`**: the global Spotify match cache. Keyed by `(artist, title)`. When `manualOverride` is true, generation skips Spotify search and uses this match directly. Automatic cache writes won't overwrite a manual entry.
 
 ## Module layout
 
@@ -104,7 +104,7 @@ All paths under `/api/v1/` unless noted. OAuth callbacks stay at root because th
 `/metrics` exposes default node/process metrics plus:
 
 - `epoch_playlists_created_total{period}`
-- `epoch_playlists_skipped_total{reason}` — `already_exists`, `insufficient_scrobbles`, `insufficient_matches`
+- `epoch_playlists_skipped_total{reason}` (`already_exists`, `insufficient_scrobbles`, `insufficient_matches`)
 - `epoch_tracks_matched_total` / `epoch_tracks_unmatched_total`
 - `epoch_jobs_completed_total` / `epoch_jobs_failed_total`
 

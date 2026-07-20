@@ -55,7 +55,7 @@ npm install
 npm run build       # static export → frontend/out/
 ```
 
-The built frontend is served by the NestJS process. There is no separate frontend dev server — build the frontend, then start the backend with `npm run start:dev`. The static output at `frontend/out/` is copied to `public/` in the Docker image.
+The built frontend is served by the NestJS process. Build the frontend first, then start the backend with `npm run start:dev`. The static output at `frontend/out/` is copied to `public/` in the Docker image.
 
 ## Adding a new playlist period
 
@@ -70,10 +70,10 @@ The generation service discovers generators through dependency injection. Everyt
 
 The Dockerfile is a multi-stage build:
 
-1. `frontend` — builds the Next.js static export
-2. `base` — installs dependencies and compiles TypeScript
-3. `test` — runs the test suite (use as a CI gate: `docker build --target test`)
-4. `production` — minimal runtime image with non-root `node` user and healthcheck
+1. `frontend`: builds the Next.js static export
+2. `base`: installs dependencies and compiles TypeScript
+3. `test`: runs the test suite (use as a CI gate: `docker build --target test`)
+4. `production`: minimal runtime image with non-root `node` user and healthcheck
 
 ```bash
 # Build and run with Docker Compose

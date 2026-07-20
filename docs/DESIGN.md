@@ -14,7 +14,7 @@ BullMQ handles the queue. The frontend streams progress over SSE, with the origi
 
 ## MongoDB for playlists and tracks
 
-Playlist and track data is document-shaped. A playlist has a list of tracks, each with Last.fm metadata and a Spotify match. This maps naturally to Mongo documents. There's no relational structure that would benefit from SQL.
+Playlist and track data is document-shaped: a playlist has a list of tracks, each with Last.fm metadata and a Spotify match. There are relational aspects (playlists have tracks, tracks reference a cache), but the access patterns are all by-playlist or by-cache-key. Mongo was simpler to set up, and the data fits documents well enough that the relational structure doesn't justify a separate SQL store.
 
 ## Redis pulls double duty
 
@@ -22,9 +22,9 @@ Redis was already needed for BullMQ. Using it for sessions too means one fewer s
 
 ## Static export for the frontend
 
-The frontend is a Next.js static export. No server-side rendering, no Next.js API routes. NestJS handles everything on the backend.
+The frontend is a Next.js static export. SSR and Next.js API routes were both unnecessary: NestJS already handles all server-side logic, and adding an SSR layer would mean running two server processes for no benefit. Static export keeps the frontend as plain files served by NestJS.
 
-The tradeoff: no dynamic route segments like `/playlist/[id]`. Those need SSR. epoch uses query strings instead (`/playlist/?id=...`). Worse URLs, simpler deployment. The frontend is just static files served by the NestJS process.
+The tradeoff is that dynamic route segments like `/playlist/[id]` require SSR, so epoch uses query strings instead (`/playlist/?id=...`). Worse URLs, simpler deployment.
 
 ## Rate limiting with Bottleneck
 

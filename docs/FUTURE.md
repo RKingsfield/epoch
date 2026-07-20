@@ -20,4 +20,4 @@ With the adapter interface in place, Apple Music, Tidal, Deezer, and others beco
 
 **Proper route parameters.** `/job/?id=...` and `/playlist/?id=...` are already linkable and bookmarkable. Moving to `/job/:id` would mean dropping the static export and running a Next server alongside NestJS: a deployment-model change for cosmetic URLs. Not worth it. Revisit only if an SSR need appears.
 
-**Mongo transactions for playlist track writes.** Transactions require a replica set, which the docker-compose doesn't configure (standalone `mongo:7`). Instead, `record()` uses `bulkWrite` with per-position upserts then cleans up stale positions — no data-loss window, no replica set needed. Revisit only if a replica set is added for other reasons.
+**Mongo transactions for playlist track writes.** Transactions require a replica set, which the docker-compose doesn't configure (standalone `mongo:7`). Instead, `record()` uses `bulkWrite` with per-position upserts then cleans up stale positions. No data-loss window, no replica set needed. Revisit only if a replica set is added for other reasons.

@@ -6,7 +6,7 @@ Turn your Last.fm listening history into Spotify playlists, sliced by year, seas
 
 ## What is this?
 
-If you've been scrobbling to Last.fm for years, you're sitting on a detailed record of everything you've listened to. epoch reads that history and builds "Top of ..." Spotify playlists from it — one for each year, season, and month where you had enough plays to make a meaningful list.
+If you've been scrobbling to Last.fm for years, you're sitting on a detailed record of everything you've listened to. epoch reads that history and builds "Top of ..." Spotify playlists from it: one for each year, season, and month where you had enough plays to make a meaningful list.
 
 Connect your Last.fm and Spotify accounts, hit generate, and come back to a library full of playlists like "Top of Summer 2019" or "Top of March 2022." The generation runs in the background, so you can close the tab and check back later.
 
@@ -53,4 +53,4 @@ For self-hosted music setups, epoch can optionally export the same track selecti
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
